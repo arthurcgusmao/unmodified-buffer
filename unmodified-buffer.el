@@ -46,6 +46,16 @@ buffer is in modified state.")
 (defvar unmodified-buffer-hook nil
   "List of functions to be called when a buffer is set to unmodified.")
 
+(defvar unmodified-buffer-ignore-remote t
+  "If non-nil, `unmodified-buffer-mode' will not be activated for
+remote files, for better performance.
+
+WARNING: currently setting this variable to nil has no effect, as
+the implemented solution doesn't work with remote file names (as
+used by Tramp). It has to be further investigated; it might have
+to do with the way we call `diff' in
+`unmodified-buffer-update-flag'.")
+
 ;; ;; Useful for debugging, uncomment if necessary
 ;; (defvar count-run-times 0 "")
 ;; (setq count-run-times 0)
@@ -104,12 +114,17 @@ disk)."
   (if (bound-and-true-p unmodified-buffer-timer)
       (cancel-timer unmodified-buffer-timer)))
 
-(defun unmodified-buffer-add-after-change-hook ()
+(defun unmodified-buffer-add-after-change-hook (&optional buffer)
   "Adds `unmodified-buffer-schedule-update' function to the
 `after-change-functions' hook for buffers that visit a file."
-  (with-current-buffer (current-buffer)
-    (add-hook 'after-change-functions
-              'unmodified-buffer-schedule-update t t)))
+  (let* ((buffer (or buffer (current-buffer)))
+         (filename (buffer-file-name buffer)))
+    (when filename ; Ensure buffer visits file
+      (unless (and unmodified-buffer-ignore-remote ; Ensure not ignoring remote or
+                   (file-remote-p filename))       ; file is not remote
+        (with-current-buffer buffer
+          (add-hook 'after-change-functions
+                    'unmodified-buffer-schedule-update t t))))))
 
 
 ;;;###autoload
@@ -126,8 +141,7 @@ visits."
         (add-hook 'after-save-hook 'unmodified-buffer-cancel-scheduled-update)
         ;; Add hook to existing buffers that visit a file
         (dolist (buffer (buffer-list))
-          (when (buffer-file-name buffer)
-            (unmodified-buffer-add-after-change-hook))))
+          (unmodified-buffer-add-after-change-hook buffer)))
     (progn
       ;; Remove hooks when disabling this minor mode
       (remove-hook 'find-file-hook 'unmodified-buffer-add-after-change-hook)
