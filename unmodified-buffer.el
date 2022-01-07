@@ -1,4 +1,4 @@
-;;; unmodified-buffer --- Auto revert modified buffer state -*- lexical-binding: t -*-
+;;; unmodified-buffer.el --- Auto revert modified buffer state -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2020  Arthur Colombini Gusmao
 
@@ -7,6 +7,7 @@
 
 ;; URL: https://github.com/arthurcgusmao/unmodified-buffer
 ;; Version: 1.0.0
+;; Package-Requires: ((emacs "24.1"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -173,4 +174,4 @@ visits."
 
 
 (provide 'unmodified-buffer)
-;;; unmodified-buffer ends here
+;;; unmodified-buffer.el ends here
