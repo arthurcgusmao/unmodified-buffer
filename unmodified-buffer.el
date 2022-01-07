@@ -62,8 +62,8 @@ to do with the way we call `diff' in
 ;; (message (concat "Times run: " (number-to-string count-run-times)))
 
 (defun unmodified-buffer-update-flag (buffer)
-  "Update the buffer modified flag if content does not differ
-from respective file in disk. Requires diff to be installed on
+  "Update a buffer's modified flag if its content does not differ
+from its respective file on disk. Requires diff to be installed on
 your system. Adapted from
 https://stackoverflow.com/a/11452885/5103881"
   (if (buffer-live-p buffer) ; check that buffer has not been killed
@@ -81,22 +81,28 @@ https://stackoverflow.com/a/11452885/5103881"
                   (save-restriction
                     (widen)
                     (write-region (point-min) (point-max) tempfile nil 'silent))
-                  ;; unless buffer diffs from file
-                  (unless
-                      (cond
-                       ((string-equal system-type "windows-nt")
-                        (/= (call-process "FC" nil nil nil "/B"
-                                          (replace-regexp-in-string "/" "\\" basefile t t)
-                                          (replace-regexp-in-string "/" "\\" tempfile t t)) 0))
-                       ((or (string-equal system-type "darwin")
-                            (string-equal system-type "gnu/linux"))
-                        (/= (call-process "diff" nil nil nil "-q" basefile tempfile) 0)) ; returns 0 if files are equal, 1 if different, and 2 if invalid file paths
-                       (t
-                        (unmodified-buffer-mode -1)
-                        (message "OS not supported; UNMODIFIED-BUFFER-MODE deactivated. Please file a bug report or pull request.")))
+                  (when (unmodified-buffer-files-have-same-content-p
+                         basefile tempfile)
                     (set-buffer-modified-p nil) ; set unmodified state (important emacs native flag)
                     (run-hooks 'unmodified-buffer-hook)))
                 (delete-file tempfile))))))))
+
+(defun unmodified-buffer-files-have-same-content-p
+    (file1 file2)
+  "Return non-nil if FILE1 and FILE2 have the same content."
+  (cond
+   ((string-equal system-type "windows-nt")
+    (= (call-process
+        "FC" nil nil nil "/B"
+        (replace-regexp-in-string "/" "\\" file1 t t)
+        (replace-regexp-in-string "/" "\\" file2 t t)) 0))
+   ((or (string-equal system-type "darwin")
+        (string-equal system-type "gnu/linux"))
+    (= (call-process "diff" nil nil nil "-q" file1 file2) 0)) ; returns 0 if files are equal, 1 if different, and 2 if invalid file paths
+   (t
+    (unmodified-buffer-mode -1)
+    (message "OS not supported; UNMODIFIED-BUFFER-MODE deactivated. \
+Please file a bug report or pull request."))))
 
 (defun unmodified-buffer-schedule-update (beg end len)
   "Schedules a check of the actual buffer state (if it is really
