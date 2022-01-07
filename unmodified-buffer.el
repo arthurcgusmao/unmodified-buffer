@@ -32,11 +32,40 @@
 
 ;;; Code:
 
-(defvar unmodified-buffer-size-limit 50000
+;;;###autoload
+(defgroup unmodified-buffer nil
+  "Automatically restore a buffer's modified state."
+  :group 'tools)
+
+(defcustom unmodified-buffer-ignore-remote t
+  "If non-nil, `unmodified-buffer-mode' will not be activated for
+remote files, for better performance.
+
+WARNING: currently setting this variable to nil has no effect, as
+the implemented solution doesn't work with remote file names (as
+used by Tramp). It has to be further investigated; it might have
+to do with the way we call `diff' in
+`unmodified-buffer-update-flag'."
+  :group 'unmodified-buffer
+  :type 'boolean)
+
+(defcustom unmodified-buffer-size-limit 50000
   "Size limit (in bytes) to try to check if buffer differs from
 saved file. Applies to both the saved file and the buffer: if
 either is larger than the specified amount, no check will be
-performed.")
+performed."
+  :group 'unmodified-buffer
+  :type 'integer)
+
+(defcustom unmodified-buffer-check-period "0.5 sec"
+  "The period of time in which every new check (whether the buffer
+is modified or not) happens.
+
+The default value usually works well across machines.
+
+Values must be a string accepted by the `run-at-time' function."
+  :group 'unmodified-buffer
+  :type 'string)
 
 (defvar unmodified-buffer-timer nil
   "Stores the latest scheduled timer to be run to check if the
@@ -46,22 +75,6 @@ buffer is in modified state.")
 ;;;###autoload
 (defvar unmodified-buffer-hook nil
   "List of functions to be called when a buffer is set to unmodified.")
-
-(defvar unmodified-buffer-ignore-remote t
-  "If non-nil, `unmodified-buffer-mode' will not be activated for
-remote files, for better performance.
-
-WARNING: currently setting this variable to nil has no effect, as
-the implemented solution doesn't work with remote file names (as
-used by Tramp). It has to be further investigated; it might have
-to do with the way we call `diff' in
-`unmodified-buffer-update-flag'.")
-
-(defvar unmodified-buffer-check-period "0.5 sec"
-  "The period of time in which every new check (whether the buffer
-is modified or not) happens.
-
-The default value usually works well across machines.")
 
 ;; ;; Useful for debugging, uncomment if necessary
 ;; (defvar count-run-times 0 "")
