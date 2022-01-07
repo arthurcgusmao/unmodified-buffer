@@ -6,7 +6,7 @@
 ;; Maintainer: Arthur Colombini Gusmao
 
 ;; URL: https://github.com/arthurcgusmao/unmodified-buffer
-;; Version: 0.1
+;; Version: 1.0.0
 
 ;; This file is not part of GNU Emacs.
 
