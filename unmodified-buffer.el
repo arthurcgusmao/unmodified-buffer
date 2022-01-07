@@ -93,9 +93,8 @@ https://stackoverflow.com/a/11452885/5103881"
                         (/= (call-process "diff" nil nil nil "-q" basefile tempfile) 0)) ; returns 0 if files are equal, 1 if different, and 2 if invalid file paths
                        (t
                         (message "OS not supported. File a bug report or pull request.")))
-                    (progn
-                      (set-buffer-modified-p nil) ; set unmodified state (important emacs native flag)
-                      (run-hooks 'unmodified-buffer-hook))))
+                    (set-buffer-modified-p nil) ; set unmodified state (important emacs native flag)
+                    (run-hooks 'unmodified-buffer-hook)))
                 (delete-file tempfile))))))))
 
 (defun unmodified-buffer-schedule-update (beg end len)
