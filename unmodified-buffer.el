@@ -124,7 +124,7 @@ https://stackoverflow.com/a/11452885/5103881"
     (message "OS not supported; UNMODIFIED-BUFFER-MODE deactivated. \
 Please file a bug report or pull request."))))
 
-(defun unmodified-buffer-schedule-update (beg end len)
+(defun unmodified-buffer-schedule-update (_beg _end _len)
   "Schedules a check of the actual buffer state (if it is really
 different than its corresponding file in disk). Arguments are not
 used but must comply with `after-change-functions' call."
