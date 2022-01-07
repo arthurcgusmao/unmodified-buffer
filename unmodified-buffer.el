@@ -92,7 +92,8 @@ https://stackoverflow.com/a/11452885/5103881"
                             (string-equal system-type "gnu/linux"))
                         (/= (call-process "diff" nil nil nil "-q" basefile tempfile) 0)) ; returns 0 if files are equal, 1 if different, and 2 if invalid file paths
                        (t
-                        (message "OS not supported. File a bug report or pull request.")))
+                        (unmodified-buffer-mode -1)
+                        (message "OS not supported; UNMODIFIED-BUFFER-MODE deactivated. Please file a bug report or pull request.")))
                     (set-buffer-modified-p nil) ; set unmodified state (important emacs native flag)
                     (run-hooks 'unmodified-buffer-hook)))
                 (delete-file tempfile))))))))
