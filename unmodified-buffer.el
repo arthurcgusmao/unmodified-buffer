@@ -56,6 +56,12 @@ used by Tramp). It has to be further investigated; it might have
 to do with the way we call `diff' in
 `unmodified-buffer-update-flag'.")
 
+(defvar unmodified-buffer-check-period "0.5 sec"
+  "The period of time in which every new check (whether the buffer
+is modified or not) happens.
+
+The default value usually works well across machines.")
+
 ;; ;; Useful for debugging, uncomment if necessary
 ;; (defvar count-run-times 0 "")
 ;; (setq count-run-times 0)
@@ -112,7 +118,9 @@ used but must comply with `after-change-functions' call."
     (with-current-buffer (current-buffer)
       (unmodified-buffer-cancel-scheduled-update) ; delete previously scheduled timer
       (setq unmodified-buffer-timer ; schedule new timer and save requested action to variable
-            (run-at-time "0.5 sec" nil #'unmodified-buffer-update-flag (current-buffer)))))) ;; use 0.5 sec 'buffer' time
+            (run-at-time
+             unmodified-buffer-check-period nil
+             #'unmodified-buffer-update-flag (current-buffer))))))
 
 (defun unmodified-buffer-cancel-scheduled-update ()
   "Cancels the last scheduling of a check of the actual buffer
