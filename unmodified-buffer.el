@@ -183,7 +183,7 @@ visits."
       (dolist (buffer (buffer-list))
         (with-current-buffer buffer
           (remove-hook 'after-change-functions
-                       'unmodified-buffer-schedule-update t))))))
+                       #'unmodified-buffer-schedule-update t))))))
 
 
 (provide 'unmodified-buffer)
