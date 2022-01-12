@@ -38,8 +38,7 @@
   :group 'tools)
 
 (defcustom unmodified-buffer-ignore-remote t
-  "If non-nil, `unmodified-buffer-mode' will not be activated for
-remote files, for better performance.
+  "If non-nil, ignore remote files, for better performance.
 
 WARNING: currently setting this variable to nil has no effect, as
 the implemented solution doesn't work with remote file names (as
@@ -50,26 +49,24 @@ to do with the way we call `diff' in
   :type 'boolean)
 
 (defcustom unmodified-buffer-size-limit 50000
-  "Size limit (in bytes) to try to check if buffer differs from
-saved file. Applies to both the saved file and the buffer: if
-either is larger than the specified amount, no check will be
-performed."
+  "Size limit (in bytes) for checking buffer modification.
+
+Applies to both the saved file and the buffer: if either is
+larger than the specified amount, no check (if the buffer differs
+from the file) will be performed."
   :group 'unmodified-buffer
   :type 'integer)
 
 (defcustom unmodified-buffer-check-period "0.5 sec"
-  "The period of time in which every new check (whether the buffer
-is modified or not) happens.
+  "The period of time in which every new modified check happens.
 
-The default value usually works well across machines.
-
-Values must be a string accepted by the `run-at-time' function."
+Values must be a string accepted by the `run-at-time' function.
+The default value usually works well across machines."
   :group 'unmodified-buffer
   :type 'string)
 
 (defvar unmodified-buffer-timer nil
-  "Stores the latest scheduled timer to be run to check if the
-buffer is in modified state.")
+  "Latest scheduled timer for the next modification check.")
 (make-variable-buffer-local 'unmodified-buffer-timer)
 
 ;;;###autoload
@@ -82,9 +79,9 @@ buffer is in modified state.")
 ;; (message (concat "Times run: " (number-to-string count-run-times)))
 
 (defun unmodified-buffer-update-flag (buffer)
-  "Update BUFFER's modified flag if its content does not differ
-from its respective file on disk. Requires diff to be installed on
-your system. Adapted from
+  "Check if BUFFER is modified and update its modified flag.
+
+Requires diff to be installed on your system. Adapted from
 https://stackoverflow.com/a/11452885/5103881"
   (if (buffer-live-p buffer)            ; check that buffer has not been killed
       (let ((basefile (buffer-file-name buffer)))
@@ -125,9 +122,10 @@ https://stackoverflow.com/a/11452885/5103881"
 Please file a bug report or pull request."))))
 
 (defun unmodified-buffer-schedule-update (_beg _end _len)
-  "Schedules a check of the actual buffer state (if it is really
-different than its corresponding file in disk). Arguments are not
-used but must comply with `after-change-functions' call."
+  "Schedule a check of the actual buffer modified state.
+
+Arguments are not used but must comply with
+`after-change-functions' call."
   (save-match-data ; necessary; otherwise running `replace-string' was raising error "Match data clobbered by buffer modification hooks."
     (with-current-buffer (current-buffer)
       (unmodified-buffer-cancel-scheduled-update) ; delete previously scheduled timer
@@ -137,15 +135,15 @@ used but must comply with `after-change-functions' call."
              #'unmodified-buffer-update-flag (current-buffer))))))
 
 (defun unmodified-buffer-cancel-scheduled-update ()
-  "Cancels the last scheduling of a check of the actual buffer
-state (if it is really different than its corresponding file in
-disk)."
+  "Cancel the next scheduled buffer modified check."
   (if (bound-and-true-p unmodified-buffer-timer)
       (cancel-timer unmodified-buffer-timer)))
 
 (defun unmodified-buffer-add-after-change-hook (&optional buffer)
-  "Adds `unmodified-buffer-schedule-update' function to the
-`after-change-functions' hook for buffers that visit a file."
+  "Add `unmodified-buffer-schedule-update' to after change hook.
+
+The `unmodified-buffer-schedule-update' function is added to the
+`after-change-functions' hook of BUFFER if it visits a file."
   (let* ((buffer (or buffer (current-buffer)))
          (filename (buffer-file-name buffer)))
     (when filename ; Ensure buffer visits file
@@ -158,7 +156,9 @@ disk)."
 
 ;;;###autoload
 (define-minor-mode unmodified-buffer-mode
-  "Minor mode for automatically restoring a buffer state to
+  "Automatically update a buffer's modified state.
+
+Minor mode for automatically restoring a buffer state to
 unmodified if its current content matches that of the file it
 visits."
   :global t
