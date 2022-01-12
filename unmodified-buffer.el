@@ -82,13 +82,13 @@ buffer is in modified state.")
 ;; (message (concat "Times run: " (number-to-string count-run-times)))
 
 (defun unmodified-buffer-update-flag (buffer)
-  "Update a buffer's modified flag if its content does not differ
+  "Update BUFFER's modified flag if its content does not differ
 from its respective file on disk. Requires diff to be installed on
 your system. Adapted from
 https://stackoverflow.com/a/11452885/5103881"
-  (if (buffer-live-p buffer) ; check that buffer has not been killed
+  (if (buffer-live-p buffer)            ; check that buffer has not been killed
       (let ((basefile (buffer-file-name buffer)))
-        (unless (not basefile) ; buffer must be associated to a file
+        (when basefile                  ; buffer must be associated to a file
           (let ((b-size (buffer-size buffer))
                 (f-size (nth 7 (file-attributes basefile)))) ; 7th attribute of a file is its size, in bytes
             ;; (setq count-run-times (+ count-run-times 1)) ;; Debugging purposes -- Uncomment if necessary
@@ -153,7 +153,7 @@ disk)."
                    (file-remote-p filename))       ; file is not remote
         (with-current-buffer buffer
           (add-hook 'after-change-functions
-                    'unmodified-buffer-schedule-update t t))))))
+                    #'unmodified-buffer-schedule-update t t))))))
 
 
 ;;;###autoload
@@ -165,19 +165,19 @@ visits."
   (if unmodified-buffer-mode
       (progn
         ;; Add after-change-hook locally for buffers who visit a file
-        (add-hook 'find-file-hook 'unmodified-buffer-add-after-change-hook)
+        (add-hook 'find-file-hook #'unmodified-buffer-add-after-change-hook)
         ;; No need to check status when file has been saved
-        (add-hook 'after-save-hook 'unmodified-buffer-cancel-scheduled-update)
+        (add-hook 'after-save-hook #'unmodified-buffer-cancel-scheduled-update)
         ;; Add hook to existing buffers that visit a file
         (dolist (buffer (buffer-list))
           (unmodified-buffer-add-after-change-hook buffer))
         ;; Add hook to buffer after it was saved to a file (in case of new buffer)
-        (add-hook 'after-save-hook 'unmodified-buffer-add-after-change-hook))
+        (add-hook 'after-save-hook #'unmodified-buffer-add-after-change-hook))
     (progn
       ;; Remove hooks when disabling this minor mode
-      (remove-hook 'find-file-hook 'unmodified-buffer-add-after-change-hook)
-      (remove-hook 'after-save-hook 'unmodified-buffer-cancel-scheduled-update)
-      (remove-hook 'after-save-hook 'unmodified-buffer-add-after-change-hook)
+      (remove-hook 'find-file-hook #'unmodified-buffer-add-after-change-hook)
+      (remove-hook 'after-save-hook #'unmodified-buffer-cancel-scheduled-update)
+      (remove-hook 'after-save-hook #'unmodified-buffer-add-after-change-hook)
       ;; Remove all buffer-local hooks that were posisbly created (in case the
       ;; buffer visits a file) by `unmodified-buffer-add-after-change-hook'
       (dolist (buffer (buffer-list))
