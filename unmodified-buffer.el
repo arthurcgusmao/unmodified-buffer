@@ -173,17 +173,17 @@ visits."
           (unmodified-buffer-add-after-change-hook buffer))
         ;; Add hook to buffer after it was saved to a file (in case of new buffer)
         (add-hook 'after-save-hook #'unmodified-buffer-add-after-change-hook))
-    (progn
-      ;; Remove hooks when disabling this minor mode
-      (remove-hook 'find-file-hook #'unmodified-buffer-add-after-change-hook)
-      (remove-hook 'after-save-hook #'unmodified-buffer-cancel-scheduled-update)
-      (remove-hook 'after-save-hook #'unmodified-buffer-add-after-change-hook)
-      ;; Remove all buffer-local hooks that were posisbly created (in case the
-      ;; buffer visits a file) by `unmodified-buffer-add-after-change-hook'
-      (dolist (buffer (buffer-list))
-        (with-current-buffer buffer
-          (remove-hook 'after-change-functions
-                       #'unmodified-buffer-schedule-update t))))))
+
+    ;; Remove hooks when disabling this minor mode
+    (remove-hook 'find-file-hook #'unmodified-buffer-add-after-change-hook)
+    (remove-hook 'after-save-hook #'unmodified-buffer-cancel-scheduled-update)
+    (remove-hook 'after-save-hook #'unmodified-buffer-add-after-change-hook)
+    ;; Remove all buffer-local hooks that were posisbly created (in case the
+    ;; buffer visits a file) by `unmodified-buffer-add-after-change-hook'
+    (dolist (buffer (buffer-list))
+      (with-current-buffer buffer
+        (remove-hook 'after-change-functions
+                     #'unmodified-buffer-schedule-update t)))))
 
 
 (provide 'unmodified-buffer)
