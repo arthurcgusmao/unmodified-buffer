@@ -207,6 +207,7 @@ visits."
     (unmodified-buffer-mode-off t)))
 
 
+;;;###autoload
 (define-minor-mode unmodified-buffer-global-mode
   "Automatically update a buffer's modified state.
 
