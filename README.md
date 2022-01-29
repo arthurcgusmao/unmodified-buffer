@@ -6,6 +6,10 @@ its contents match the original file it is visiting.
 
 ## Installation and Usage
 
+### Install via MELPA
+
+Ensure MELPA is [installed](https://stackoverflow.com/a/24991705/5103881) and run `M-x package-install RET unmodified-buffer`
+
 ### Manual installation
 
 Clone the repository somewhere in your machine, add its location to the Emacs
