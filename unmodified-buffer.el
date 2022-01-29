@@ -79,11 +79,12 @@ The default value usually works well across machines."
 ;; (message (concat "Times run: " (number-to-string count-run-times)))
 
 (defun unmodified-buffer-update-flag (buffer)
-  "Check if BUFFER is modified and update its modified flag.
+  "Check if BUFFER is unmodified and update its modified flag.
 
 Requires diff to be installed on your system. Adapted from
 https://stackoverflow.com/a/11452885/5103881"
-  (if (buffer-live-p buffer)            ; check that buffer has not been killed
+  (if (and (buffer-live-p buffer)       ; check that buffer has not been killed
+           (buffer-modified-p buffer))  ; check that buffer has been modified after last save
       (let ((basefile (buffer-file-name buffer)))
         (when basefile                  ; buffer must be associated to a file
           (let ((b-size (buffer-size buffer))
@@ -153,6 +154,32 @@ The `unmodified-buffer-schedule-update' function is added to the
           (add-hook 'after-change-functions
                     #'unmodified-buffer-schedule-update t t))))))
 
+(defun unmodified-buffer-remove-after-change-hook (&optional buffer)
+  "Revert `unmodified-buffer-add-after-change-hook' in BUFFER."
+  (with-current-buffer (or buffer (current-buffer))
+    (remove-hook 'after-change-functions
+                 #'unmodified-buffer-schedule-update t)))
+
+(defun unmodified-buffer-add-hooks (&optional buffer)
+  "Add hooks for enabling unmodified-buffer in BUFFER."
+  (let ((buffer (or buffer (current-buffer))))
+    (with-current-buffer buffer
+      (add-hook 'after-save-hook
+                #'unmodified-buffer-cancel-scheduled-update nil t) ;; No need to check status when file has been saved
+      (add-hook 'after-save-hook
+                #'unmodified-buffer-add-after-change-hook nil t) ;; Add hook to buffer after it was saved to a file (in case of new buffer)
+      (unmodified-buffer-add-after-change-hook buffer)))) ;; Add hook to buffer if it visits a file
+
+(defun unmodified-buffer-remove-hooks (&optional buffer)
+  "Remove unmodified-buffer-related hooks from BUFFER."
+  (let ((buffer (or buffer (current-buffer))))
+    (with-current-buffer buffer
+      (remove-hook 'after-save-hook
+                   #'unmodified-buffer-cancel-scheduled-update t)
+      (remove-hook 'after-save-hook
+                   #'unmodified-buffer-add-after-change-hook t)
+      (unmodified-buffer-remove-after-change-hook buffer))))
+
 
 ;;;###autoload
 (define-minor-mode unmodified-buffer-mode
@@ -161,29 +188,27 @@ The `unmodified-buffer-schedule-update' function is added to the
 Minor mode for automatically restoring a buffer state to
 unmodified if its current content matches that of the file it
 visits."
-  :global t
+  :global nil
   (if unmodified-buffer-mode
-      (progn
-        ;; Add after-change-hook locally for buffers who visit a file
-        (add-hook 'find-file-hook #'unmodified-buffer-add-after-change-hook)
-        ;; No need to check status when file has been saved
-        (add-hook 'after-save-hook #'unmodified-buffer-cancel-scheduled-update)
-        ;; Add hook to existing buffers that visit a file
-        (dolist (buffer (buffer-list))
-          (unmodified-buffer-add-after-change-hook buffer))
-        ;; Add hook to buffer after it was saved to a file (in case of new buffer)
-        (add-hook 'after-save-hook #'unmodified-buffer-add-after-change-hook))
+      (unmodified-buffer-add-hooks)
+    (unmodified-buffer-remove-hooks)))
 
-    ;; Remove hooks when disabling this minor mode
-    (remove-hook 'find-file-hook #'unmodified-buffer-add-after-change-hook)
-    (remove-hook 'after-save-hook #'unmodified-buffer-cancel-scheduled-update)
-    (remove-hook 'after-save-hook #'unmodified-buffer-add-after-change-hook)
-    ;; Remove all buffer-local hooks that were posisbly created (in case the
-    ;; buffer visits a file) by `unmodified-buffer-add-after-change-hook'
-    (dolist (buffer (buffer-list))
-      (with-current-buffer buffer
-        (remove-hook 'after-change-functions
-                     #'unmodified-buffer-schedule-update t)))))
+
+;;;###autoload
+(define-globalized-minor-mode unmodified-buffer-global-mode
+  unmodified-buffer-mode (lambda () (unmodified-buffer-mode 1)))
+
+
+(defun unmodified-buffer-mode-disable-all ()
+  "Disable unmodified-buffer in all existing buffers.
+
+This is a utility function due to the way in which
+`define-globalized-minor-mode' operates -- it doesn't turn the
+mode off of existing buffers when deactivated."
+  (interactive)
+  (dolist (buffer (buffer-list))
+    (with-current-buffer buffer
+      (unmodified-buffer-mode -1))))
 
 
 (provide 'unmodified-buffer)
